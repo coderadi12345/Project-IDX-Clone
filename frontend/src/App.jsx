@@ -1,13 +1,21 @@
-import { useState } from 'react'
-import viteLogo from '/vite.svg'
 import './App.css'
-
+import usePing from './hooks/queries/usePing'
 function App() {
+  
+  const {isLoading , data} = usePing()
+
+  if(isLoading){
+    return (
+      <>
+      Loading...
+      </>
+    )
+  }
   
 
   return (
     <>
-      Hello
+      Hello {data.message}
     </>
   )
 }
