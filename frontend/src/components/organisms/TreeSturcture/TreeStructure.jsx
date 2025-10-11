@@ -1,31 +1,32 @@
-import { useParams } from "react-router-dom"
-import { useTreeStructureStore } from "../../../store/treeStructureStore"
-import { useEffect } from "react"
-import { Tree } from "../../molecules/Tree/Tree"
+import { useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useTreeStructureStore } from "../../../store/treeStructureStore";
+import { Tree } from "../../molecules/Tree/Tree";
 
 export const TreeStructure = () => {
+  const { projectId } = useParams();
 
-     const {treeStructure , setTreeStructure} = useTreeStructureStore()
+  const { treeStructure, loading, error, setTreeStructure } = useTreeStructureStore();
 
-     const {projectId} = useParams()
+  useEffect(() => {
+    if (projectId) {
+      setTreeStructure(projectId);
+    }
+  }, [projectId, setTreeStructure]);
 
-     useEffect(() =>{
+  // ✅ Render priority: loading -> error -> empty -> tree
+  if (loading) {
+    return <p style={{ color: "white" }}>Loading tree structure...</p>;
+  }
 
-        if(treeStructure){
-            console.log('tree:' , treeStructure)
-        }
-        else {
-            setTreeStructure(projectId)
-        }
-        
+  if (error) {
+    return <p style={{ color: "red" }}>Error loading tree: {error}</p>;
+  }
 
-     }, [projectId ,setTreeStructure])
+  if (!treeStructure || Object.keys(treeStructure).length === 0) {
+    return <p style={{ color: "white" }}>No tree structure available</p>;
+  }
 
-    return (
-        <div>
-
-            <Tree
-            fileFolderData={treeStructure}/>
-        </div>
-    )
-}
+  return <Tree fileFolderData={treeStructure} />;
+};
+  

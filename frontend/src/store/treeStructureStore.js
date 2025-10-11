@@ -1,25 +1,37 @@
-import { QueryClient } from "@tanstack/react-query"
-import { getProjectTree } from "../apis/project"
-import { create } from "zustand"
+import { QueryClient } from "@tanstack/react-query";
+import { getProjectTree } from "../apis/project";
+import { create } from "zustand";
 
 export const useTreeStructureStore = create((set) => {
+  const queryClient = new QueryClient();
 
-const queryClient  = new QueryClient()
+  return {
+    projectId: null,
+    treeStructure: null,
+    loading: false,
+    error: null,
 
-    return {
-        treeStructure: null,
-        setTreeStructure: async(projectId) =>{
-            const data = await queryClient.fetchQuery({
-                   queryKey: ["projectTree", projectId],
-                queryFn: () => getProjectTree({projectId})
+    setProjectId: (projectId) => set({ projectId }),
 
-            })
-            console.log(data)
+    setTreeStructure: async (projectId) => {
+      if (!projectId) return;
 
-            set({
-                treeStructure: data
-            })
-        }
-    }
+      set({ loading: true, error: null });
 
-})
+      try {
+        const data = await queryClient.fetchQuery({
+          queryKey: [`projecttree-${projectId}`],
+          queryFn: () => getProjectTree({ projectId }),
+        });
+
+        console.log("Fetched tree:", data);
+
+        set({ treeStructure: data, loading: false });
+      } catch (err) {
+        set({ error: err.message, loading: false });
+        console.error("Failed to fetch tree:", err);
+      }
+    },
+  };
+});
+
