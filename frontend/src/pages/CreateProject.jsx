@@ -39,8 +39,6 @@ export const CreateProject = () =>{
 
     const {Header , Footer , Content } = Layout
 
- 
-
     const {createProjectMutation} = useCreateProject()
 
     const navigate  = useNavigate()

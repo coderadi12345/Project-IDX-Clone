@@ -32,8 +32,6 @@ useEffect(() => {
 
     return (
         <>
-       <p style={{ color: "white" }}>Project Id: {projectFromUrl}</p>
-
 
      <div style={{display: 'flex'}}>
         <div

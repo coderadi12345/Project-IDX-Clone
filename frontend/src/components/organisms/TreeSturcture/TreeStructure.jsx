@@ -2,11 +2,19 @@ import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useTreeStructureStore } from "../../../store/treeStructureStore";
 import { Tree } from "../../molecules/Tree/Tree";
+import { useFileContextMenuStore } from "../../../store/fileContextMenuStore";
+import { FileContextMenu } from "../../molecules/ContextMenu/FileContextMenu";
 
 export const TreeStructure = () => {
   const { projectId } = useParams();
 
   const { treeStructure, loading, error, setTreeStructure } = useTreeStructureStore();
+  const {
+    file,
+    isOpen: isFileContextOpen,
+    x: fileContextX,
+    y: fileContextY
+  } = useFileContextMenuStore();
 
   useEffect(() => {
     if (projectId) {
@@ -14,7 +22,6 @@ export const TreeStructure = () => {
     }
   }, [projectId, setTreeStructure]);
 
-  // ✅ Render priority: loading -> error -> empty -> tree
   if (loading) {
     return <p style={{ color: "white" }}>Loading tree structure...</p>;
   }
@@ -27,6 +34,16 @@ export const TreeStructure = () => {
     return <p style={{ color: "white" }}>No tree structure available</p>;
   }
 
-  return <Tree fileFolderData={treeStructure} />;
+  return (
+    <>
+      {isFileContextOpen && fileContextX && fileContextY && (
+        <FileContextMenu
+          x={fileContextX}
+          y={fileContextY}
+          path={file}
+        />
+      )}
+      <Tree fileFolderData={treeStructure} />
+    </>
+  );
 };
-  

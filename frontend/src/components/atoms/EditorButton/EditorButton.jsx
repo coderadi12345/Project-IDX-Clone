@@ -1,6 +1,5 @@
 import './EditorButton.css'
 
-
 export const EditorButton = ({isActive}) =>{
 
     return (
