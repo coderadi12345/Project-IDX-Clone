@@ -50,8 +50,8 @@ const {editorSocket} = useEditorSocketStore()
    useEffect(() =>{
     downloadTheme()
    } , [])
-   
 
+   
     return(
         <>
         {     editorState.theme && 
