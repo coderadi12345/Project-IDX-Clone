@@ -8,6 +8,8 @@ import chokidar from 'chokidar'
 import { handleEditorSocketEvents } from "./socketHandlers/editorHandler.js"
 import queryString from 'query-string'
 import { handleContainerCreate } from "./containers/handleContainerCreate.js"
+import {WebSocketServer} from 'ws'
+import { handleTerminalCreation } from "./containers/handleTerminalCreation.js"
 
 const app = express()
 const server = createServer(app)
@@ -64,26 +66,37 @@ editorNamespace.on('connection', (socket) =>{
 
 })
 
-const terminalNamsespace = io.of('/terminal')
-terminalNamsespace.on('connection', (socket)=>{
-    console.log('terminal connected')
-        let projectId = socket.handshake.query['projectId']
-
-
-    socket.on('shell-input', (data)=>{
-        console.log('input received', data)
-        terminalNamsespace.emit('shell-output', data)
-
-    })
-
-    socket.on('disconnected',()=>{
-        console.log('terminal disconnected')
-    })
-    handleContainerCreate(projectId , socket)
-})
 
 server.listen(PORT,()=>{
     console.log(`Server running at port ${PORT}`)
     console.log(process.cwd())
+})
+
+const webSocketForTerminal = new WebSocketServer({
+    noServer:true,
+})
+
+server.on('upgrade' ,(req ,tcp ,head)=>{
+    const isTerminal  = req.url.includes('/terminal')
+
+    if(isTerminal){
+        console.log(req.url)
+        const projectId = req.url.split('=')[1]
+        console.log('Project id received after connection' , projectId)
+        handleContainerCreate(projectId,webSocketForTerminal ,req , tcp,head)
+    }
+})
+
+webSocketForTerminal.on('connection',(ws,req,container)=>{
+    console.log('Terminal Connected')
+    handleTerminalCreation(container , ws)
+    ws.on('close',()=>{
+        container.remove({force:true},(err,data)=>{
+            if(err){
+                console.log('Error while Removing container',err)
+            }
+            console.log('Container Removed',data)
+        })
+    })
 })
 
