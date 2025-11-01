@@ -5,11 +5,14 @@ import { useEffect , useRef } from 'react'
 import {io} from 'socket.io-client'
 import { useParams } from 'react-router-dom'
 import {AttachAddon} from 'xterm-addon-attach'
+import { useTerminalSocket } from '../../../store/terminalSocketStore'
 export const BrowserTerminal = () =>{
     
     const terminalRef = useRef(null)
-    const socket = useRef(null)
-    const {projectId: projectFromUrl} = useParams()
+    // const socket = useRef(null)
+    // const {projectId: projectFromUrl} = useParams()
+
+    const { terminalSocket} = useTerminalSocket()
 
     useEffect(()=>{
         const term  = new Terminal({
@@ -27,7 +30,7 @@ export const BrowserTerminal = () =>{
 
             },
             fontSize: 16,
-            fontFamily: 'Fira Code ',
+            fontFamily: 'monospace',
             convertEol: true
         })
     
@@ -36,17 +39,20 @@ export const BrowserTerminal = () =>{
         term.loadAddon(fitAddon)
         fitAddon.fit()
 
-        socket.current = new WebSocket('ws://localhost:3000/terminal?projectId='+projectFromUrl)
-
-       socket.current.onopen = () =>{
-        const attachAddon = new AttachAddon(socket.current)
+        if(terminalSocket){
+            
+      terminalSocket.onopen = () =>{
+        const attachAddon = new AttachAddon(terminalSocket)
         term.loadAddon(attachAddon)
        }
+        }
+
+
         return () =>{
             term.dispose()
             
         }
-    } , [])
+    } , [terminalSocket])
 
     return (
         <div

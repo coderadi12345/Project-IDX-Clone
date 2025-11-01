@@ -7,9 +7,18 @@ import apiRouter from './routes/index.js'
 import chokidar from 'chokidar'
 import { handleEditorSocketEvents } from "./socketHandlers/editorHandler.js"
 import queryString from 'query-string'
-import { handleContainerCreate } from "./containers/handleContainerCreate.js"
+import { handleContainerCreate, listContainers } from "./containers/handleContainerCreate.js"
 import {WebSocketServer} from 'ws'
 import { handleTerminalCreation } from "./containers/handleTerminalCreation.js"
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always point watcher to backend/projects
+const BASE_PROJECTS_PATH = path.resolve(__dirname, '../projects');
+
 
 const app = express()
 const server = createServer(app)
@@ -39,7 +48,7 @@ editorNamespace.on('connection', (socket) =>{
     console.log('Project Id received after connection',projectId)
 
     if(projectId){
-        var watcher = chokidar.watch(`./projects/${projectId}`,{
+var watcher = chokidar.watch(path.join(BASE_PROJECTS_PATH, projectId), {
             ignored: (path) => path.includes('node_modules'),
             persistent: true,
 
@@ -53,6 +62,11 @@ editorNamespace.on('connection', (socket) =>{
             console.log(event , path)
         })
     }
+
+    socket.on('getPort', () => {
+        console.log('getPort event received');
+        listContainers();
+    })
 
     handleEditorSocketEvents(socket,editorNamespace)
 
@@ -90,6 +104,8 @@ server.on('upgrade' ,(req ,tcp ,head)=>{
 webSocketForTerminal.on('connection',(ws,req,container)=>{
     console.log('Terminal Connected')
     handleTerminalCreation(container , ws)
+
+
     ws.on('close',()=>{
         container.remove({force:true},(err,data)=>{
             if(err){

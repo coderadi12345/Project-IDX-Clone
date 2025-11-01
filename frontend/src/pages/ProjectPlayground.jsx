@@ -7,14 +7,19 @@ import {io} from 'socket.io-client'
 import { useEffect } from "react"
 import { useTreeStructureStore } from "../store/treeStructureStore"
 import { BrowserTerminal } from "../components/molecules/BrowserTerminal/BrowserTerminal"
+import { useTerminalSocket } from "../store/terminalSocketStore"
 
 export const ProjectPlayground = () => {
 
 const {projectId: projectFromUrl}  = useParams()
-    const { setProjectId, projectId } = useTreeStructureStore();
+  const { setProjectId, projectId } = useTreeStructureStore();
 
+const {setEditorSocket , editorSocket} = useEditorSocketStore()
+const {setTerminalSocket } = useTerminalSocket()
 
-const {setEditorSocket} = useEditorSocketStore()
+function fetchPort(){
+   editorSocket.emit('getPort')
+}
 
 useEffect(() => {
   if(projectFromUrl){
@@ -25,10 +30,12 @@ useEffect(() => {
       },
     })
 
+    const ws  = new WebSocket('ws://localhost:3000/terminal?projectId='+projectFromUrl)
+    setTerminalSocket(ws)
     setEditorSocket(editorSocketConn) 
   }
     
-  }, [setProjectId,projectFromUrl, setEditorSocket])
+  }, [setProjectId,projectFromUrl, setEditorSocket , setTerminalSocket])
 
 
     return (
@@ -54,6 +61,11 @@ useEffect(() => {
       
         <EditorButton isActive = {false}/>
         <EditorButton isActive  = {true}/>
+        <div>
+          <button onClick={fetchPort}>
+            getPort
+          </button>
+        </div>
         <div>
           <BrowserTerminal/>
         </div>

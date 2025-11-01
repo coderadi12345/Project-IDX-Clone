@@ -23,13 +23,13 @@ export const handleTerminalCreation = (container, ws) => {
             processStreamOutput(stream, ws);
 
             ws.on("message", (data) => {
-                // if(data === "getPort") {
-                //     container.inspect((err, data) => {
-                //         const port = data.NetworkSettings;
-                //         console.log(port);
-                //     })
-                //     return;
-                // }
+                if(data === "getPort") {
+                    container.inspect((err, data) => {
+                        const port = data.NetworkSettings;
+                        console.log(port);
+                    })
+                    return;
+                }
                 stream.write(data);
             })
         })
