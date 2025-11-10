@@ -23,12 +23,28 @@ let projectPath = path.resolve(process.cwd(), `projects/${projectId}`);
 
     console.log('Binding project path to container:', projectPath);
 
+    const existingContainer = await docker.listContainers({
+            name: projectId
+        });
+
+      console.log("Existing container", existingContainer);
+
+              if(existingContainer.length > 0) {
+            console.log("Container already exists, stopping and removing it");
+            const container = docker.getContainer(existingContainer[0].Id);
+            await container.remove({force: true});
+        }
+
+    console.log("Creating a new container");
+
+
     const container = await docker.createContainer({
       Image: 'sandbox',
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
       Cmd: ['/bin/bash'],
+      name: projectId,
       Tty: true,
       User: 'sandbox',
       ExposedPorts: { '5173/tcp': {} },
@@ -45,11 +61,31 @@ let projectPath = path.resolve(process.cwd(), `projects/${projectId}`);
     await container.start();
     console.log('Container Started');
 
-    terminalSocket.handleUpgrade(req, tcpSocket, head, (establishedWSConn) => {
-      console.log('Connection upgraded to WebSocket');
-      terminalSocket.emit('connection', establishedWSConn, req, container);
-    });
+    // terminalSocket.handleUpgrade(req, tcpSocket, head, (establishedWSConn) => {
+    //   console.log('Connection upgraded to WebSocket');
+    //   terminalSocket.emit('connection', establishedWSConn, req, container);
+    // });
+
+    return container;
   } catch (error) {
     console.error('Error while creating container:', error);
   }
 };
+
+export async function getContainerPort(containerName) {
+    const container = await docker.listContainers({
+        name: containerName
+    });
+
+    if(container.length > 0) {
+        const containerInfo = await docker.getContainer(container[0].Id).inspect();
+        console.log("Container info", containerInfo);
+        try {
+            return containerInfo?.NetworkSettings?.Ports["5173/tcp"][0].HostPort;
+        } catch(error) {
+            console.log("port not present");
+            return undefined;
+        }
+        
+    }
+}

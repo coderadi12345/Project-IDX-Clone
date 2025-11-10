@@ -18,7 +18,9 @@ const {setEditorSocket , editorSocket} = useEditorSocketStore()
 const {setTerminalSocket } = useTerminalSocket()
 
 function fetchPort(){
-   editorSocket.emit('getPort')
+  console.log(editorSocket)
+   editorSocket.emit('getPort',{containerName: projectFromUrl})
+   console.log('fetching Port')
 }
 
 useEffect(() => {
@@ -30,7 +32,7 @@ useEffect(() => {
       },
     })
 
-    const ws  = new WebSocket('ws://localhost:3000/terminal?projectId='+projectFromUrl)
+    const ws  = new WebSocket('ws://localhost:4000/terminal?projectId='+projectFromUrl)
     setTerminalSocket(ws)
     setEditorSocket(editorSocketConn) 
   }
