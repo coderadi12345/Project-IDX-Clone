@@ -4,10 +4,13 @@ import { EditorButton } from "../components/atoms/EditorButton/EditorButton"
 import { TreeStructure } from "../components/organisms/TreeSturcture/TreeStructure"
 import { useEditorSocketStore } from "../store/editorSocketStore"
 import {io} from 'socket.io-client'
-import { useEffect } from "react"
+import { useEffect,useState } from "react"
 import { useTreeStructureStore } from "../store/treeStructureStore"
 import { BrowserTerminal } from "../components/molecules/BrowserTerminal/BrowserTerminal"
 import { useTerminalSocket } from "../store/terminalSocketStore"
+import { Browser } from "../components/organisms/Browser/Browser"
+import { usePortStore } from "../store/portStore"
+import { Button } from "antd"
 
 export const ProjectPlayground = () => {
 
@@ -15,13 +18,12 @@ const {projectId: projectFromUrl}  = useParams()
   const { setProjectId, projectId } = useTreeStructureStore();
 
 const {setEditorSocket , editorSocket} = useEditorSocketStore()
-const {setTerminalSocket } = useTerminalSocket()
+const { terminalSocket, setTerminalSocket } = useTerminalSocket()
 
-function fetchPort(){
-  console.log(editorSocket)
-   editorSocket.emit('getPort',{containerName: projectFromUrl})
-   console.log('fetching Port')
-}
+const [loadBrowser, setLoadBrowser] = useState(false)
+
+const {port} = usePortStore()
+
 
 useEffect(() => {
   if(projectFromUrl){
@@ -31,9 +33,14 @@ useEffect(() => {
         projectId: projectFromUrl,
       },
     })
+    try {
+      const ws  = new WebSocket('ws://localhost:4000/terminal?projectId='+projectFromUrl)
+      setTerminalSocket(ws)
 
-    const ws  = new WebSocket('ws://localhost:4000/terminal?projectId='+projectFromUrl)
-    setTerminalSocket(ws)
+    } catch (error) {
+      console.log('error in ws',error)
+    }
+    
     setEditorSocket(editorSocketConn) 
   }
     
@@ -64,12 +71,13 @@ useEffect(() => {
         <EditorButton isActive = {false}/>
         <EditorButton isActive  = {true}/>
         <div>
-          <button onClick={fetchPort}>
-            getPort
-          </button>
+          <BrowserTerminal/>
         </div>
         <div>
-          <BrowserTerminal/>
+          <Button 
+          onClick={()=>setLoadBrowser(true)}
+          >Load Browser</Button>
+          { loadBrowser && projectFromUrl && terminalSocket && <Browser projectId = {projectFromUrl}/> }
         </div>
         </>
     )
