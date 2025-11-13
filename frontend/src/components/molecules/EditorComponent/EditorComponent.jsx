@@ -1,5 +1,5 @@
 import Editor from '@monaco-editor/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect,useState } from 'react'
 import { useActiveFileTabStore } from '../../../store/activeFileTabStore'
 import { useEditorSocketStore } from '../../../store/editorSocketStore'
 import { extensionToFileType } from '../../../utils/extensionToFileType'
@@ -21,6 +21,7 @@ const {editorSocket} = useEditorSocketStore()
    async function downloadTheme() {
     const response = await fetch('/Dracula.json')
     const data = await response.json()
+    console.log(data)
     setEditorState({ ...editorState,theme:data})
    }
 
@@ -32,7 +33,7 @@ const {editorSocket} = useEditorSocketStore()
 
    function handleChange(value) {
 
-    if(timerId!==null){
+    if(timerId!=null){
         clearTimeout(timerId)
     }
     timerId= setTimeout(()=>{
@@ -56,7 +57,7 @@ const {editorSocket} = useEditorSocketStore()
         <>
         {     editorState.theme && 
           <Editor
-         height={'50'}
+        
          width={'100%'}
          defaultLanguage={undefined}
          defaultValue='// Welcome to the playground'
