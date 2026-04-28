@@ -101,7 +101,7 @@ export async function getContainerPort(containerName) {
             return containerInfo?.NetworkSettings?.Ports["5173/tcp"][0].HostPort;
         } catch(error) {
             console.log("port not present");
-            return undefined;
+            return undefined
         }
         
     }
