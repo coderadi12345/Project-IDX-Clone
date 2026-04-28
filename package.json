@@ -1,0 +1,9 @@
+{
+  "name": "project-idx-clone",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd backend && npm install",
+    "start": "node backend/src/app.js"
+  }
+}

@@ -2,6 +2,7 @@ import path from 'path';
 import Docker from 'dockerode';
 
 const docker = new Docker();
+const pendingCreations = new Map();
 
 export const listContainers = async () => {
   const containers = await docker.listContainers();
@@ -13,62 +14,78 @@ export const listContainers = async () => {
 
 export const handleContainerCreate = async (projectId, terminalSocket, req, tcpSocket, head) => {
   console.log('Project Id is received for container create', projectId);
-  try {
-let projectPath = path.resolve(process.cwd(), `projects/${projectId}`);
 
-    if (process.platform === 'win32') {
-      projectPath = projectPath.replace(/\\/g, '/'); 
-      projectPath = projectPath.replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
-    }
+  if (pendingCreations.has(projectId)) {
+    console.log('Container creation already in progress. Waiting...');
+    return await pendingCreations.get(projectId);
+  }
 
-    console.log('Binding project path to container:', projectPath);
+  const creationPromise = (async () => {
+    try {
+      let projectPath = path.resolve(process.cwd(), `projects/${projectId}`);
 
-    const existingContainer = await docker.listContainers({
-            name: projectId
-        });
+      if (process.platform === 'win32') {
+        projectPath = projectPath.replace(/\\/g, '/'); 
+        projectPath = projectPath.replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
+      }
+
+      console.log('Binding project path to container:', projectPath);
+
+      const existingContainer = await docker.listContainers({
+        all: true,
+        filters: JSON.stringify({ name: [`^/${projectId}$`] })
+      });
 
       console.log("Existing container", existingContainer);
 
-              if(existingContainer.length > 0) {
-            console.log("Container already exists, stopping and removing it");
-            const container = docker.getContainer(existingContainer[0].Id);
-            await container.remove({force: true});
+      if (existingContainer.length > 0) {
+        console.log('Container already exists, reusing it');
+        const container = docker.getContainer(existingContainer[0].Id);
+        if (existingContainer[0].State !== 'running') {
+          console.log('Starting stopped container');
+          await container.start();
         }
+        return container;
+      }
 
-    console.log("Creating a new container");
+      console.log("Creating a new container");
 
 
-    const container = await docker.createContainer({
-      Image: 'sandbox',
-      AttachStdin: true,
-      AttachStdout: true,
-      AttachStderr: true,
-      Cmd: ['/bin/bash'],
-      name: projectId,
-      Tty: true,
-      User: 'sandbox',
-      ExposedPorts: { '5173/tcp': {} },
-      Env: ['HOST=0.0.0.0'],
-      HostConfig: {
-        Binds: [`${projectPath}:/home/sandbox/app`],
-        PortBindings: {
-          '5173/tcp': [{ HostPort: '0' }],
+      const container = await docker.createContainer({
+        Image: 'sandbox',
+        AttachStdin: true,
+        AttachStdout: true,
+        AttachStderr: true,
+        Cmd: ['/bin/bash'],
+        name: projectId,
+        Tty: true,
+        User: 'sandbox',
+        ExposedPorts: { '5173/tcp': {} },
+        Env: ['HOST=0.0.0.0'],
+        HostConfig: {
+          Binds: [`${projectPath}:/home/sandbox/app`],
+          PortBindings: {
+            '5173/tcp': [{ HostPort: '0' }],
+          },
         },
-      },
-    });
+      });
 
-    console.log('Container Created:', container.id);
-    await container.start();
-    console.log('Container Started');
+      console.log('Container Created:', container.id);
+      await container.start();
+      console.log('Container Started');
 
-    // terminalSocket.handleUpgrade(req, tcpSocket, head, (establishedWSConn) => {
-    //   console.log('Connection upgraded to WebSocket');
-    //   terminalSocket.emit('connection', establishedWSConn, req, container);
-    // });
+      return container;
+    } catch (error) {
+      console.error('Error while creating container:', error);
+      return undefined;
+    }
+  })();
 
-    return container;
-  } catch (error) {
-    console.error('Error while creating container:', error);
+  pendingCreations.set(projectId, creationPromise);
+  try {
+    return await creationPromise;
+  } finally {
+    pendingCreations.delete(projectId);
   }
 };
 

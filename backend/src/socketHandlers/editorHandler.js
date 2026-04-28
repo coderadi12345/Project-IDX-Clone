@@ -1,7 +1,6 @@
 import fs from 'fs/promises'
 import { getContainerPort } from '../containers/handleContainerCreate.js'
 
-
 export const handleEditorSocketEvents = (socket , editorNamespace) =>{
     socket.on('writeFile', async ({data ,pathToFileOrFolder}) =>{
         try{
@@ -60,7 +59,7 @@ export const handleEditorSocketEvents = (socket , editorNamespace) =>{
             })
         }
     })
-
+    
     socket.on('deleteFile', async({pathToFileOrFolder})=>{
         try {
             const response = await fs.unlink(pathToFileOrFolder)

@@ -23,6 +23,25 @@ export const createProjectService = async () => {
         cwd: projectDir
     });
 
+    const viteConfigPath = path.join(projectDir, 'sandbox', 'vite.config.js');
+    const viteConfigContent = `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    watch: {
+      usePolling: true,
+      interval: 100
+    }
+  }
+})
+`;
+    await fs.writeFile(viteConfigPath, viteConfigContent);
+
     return projectId;
 };
 

@@ -11,6 +11,7 @@ export const BrowserTerminal = () => {
   const fitAddonRef = useRef(null);
   const termRef = useRef(null);
 
+  // Initialize terminal only once on mount
   useEffect(() => {
     const term = new Terminal({
       cursorBlink: true,
@@ -35,13 +36,6 @@ export const BrowserTerminal = () => {
     term.open(terminalRef.current);
     termRef.current = term;
 
-    if (terminalSocket) {
-      terminalSocket.onopen = () => {
-        const attachAddon = new AttachAddon(terminalSocket);
-        term.loadAddon(attachAddon);
-      };
-    }
-
     const resizeObserver = new ResizeObserver(() => {
       fitAddon.fit();
     });
@@ -52,7 +46,35 @@ export const BrowserTerminal = () => {
     return () => {
       resizeObserver.disconnect();
       term.dispose();
+      termRef.current = null;
     };
+  }, []);
+
+  // Attach socket when available
+  useEffect(() => {
+    if (terminalSocket && termRef.current) {
+      const attachAddon = new AttachAddon(terminalSocket);
+      
+      if (terminalSocket.readyState === WebSocket.OPEN) {
+        termRef.current.loadAddon(attachAddon);
+      } else {
+        const handleOpen = () => {
+          if (termRef.current) {
+            termRef.current.loadAddon(attachAddon);
+          }
+        };
+        terminalSocket.addEventListener('open', handleOpen);
+        
+        return () => {
+          terminalSocket.removeEventListener('open', handleOpen);
+          attachAddon.dispose();
+        };
+      }
+
+      return () => {
+        attachAddon.dispose();
+      };
+    }
   }, [terminalSocket]);
 
   return (
@@ -68,3 +90,4 @@ export const BrowserTerminal = () => {
     />
   );
 };
+

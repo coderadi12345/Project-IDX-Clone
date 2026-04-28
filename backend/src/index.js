@@ -47,9 +47,15 @@ var watcher = chokidar.watch(path.join(BASE_PROJECTS_PATH, projectId), {
             ignoreInitial: true
         })
 
-        watcher.on('all' , (event , path) =>{
-            console.log(event , path)
-        })
+        watcher.on('all', (event, path) => {
+    console.log(event, path);
+
+    // 🔥 send reload event
+    socket.emit('fileChanged', {
+        event,
+        path
+    });
+});
     }
 
     handleEditorSocketEvents(socket,editorNamespace)

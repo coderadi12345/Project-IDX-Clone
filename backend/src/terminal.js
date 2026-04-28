@@ -32,7 +32,12 @@ webSocketForTerminal.on('connection',async(ws,req,container)=>{
 
         const container = await handleContainerCreate(projectId,webSocketForTerminal)
 
-    handleTerminalCreation(container , ws)
+        if (container) {
+            handleTerminalCreation(container, ws);
+        } else {
+            console.log('Container creation failed, closing socket');
+            ws.close();
+        }
     }
 
     ws.on('getPort', () => {

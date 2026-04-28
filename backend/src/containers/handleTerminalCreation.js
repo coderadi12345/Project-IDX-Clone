@@ -23,9 +23,9 @@ export const handleTerminalCreation = (container, ws) => {
             processStreamOutput(stream, ws);
 
             ws.on("message", (data) => {
-                if(data === "getPort") {
-                    container.inspect((err, data) => {
-                        const port = data.NetworkSettings;
+                if(data.toString() === "getPort") {
+                    container.inspect((err, inspectData) => {
+                        const port = inspectData.NetworkSettings;
                         console.log(port);
                     })
                     return;
@@ -46,20 +46,27 @@ function processStreamOutput(stream, ws) {
             buffer = Buffer.concat([buffer, data]); 
         }
 
-        if(!nextDataType) {
-            if(buffer.length >= 8) {
-                const header = bufferSlicer(8);
-                nextDataType = header.readUInt32BE(0); 
-                nextDataLength = header.readUInt32BE(4); 
-                processStreamData(); 
-            }
-        } else {
-            if(buffer.length >= nextDataLength) {
-                const content = bufferSlicer(nextDataLength); 
-                ws.send(content); 
-                nextDataType = null; 
-                nextDataLength = null;
-                processStreamData(); 
+        let processing = true;
+        while (processing) {
+            processing = false;
+            
+            if(!nextDataType) {
+                if(buffer.length >= 8) {
+                    const header = bufferSlicer(8);
+                    nextDataType = header.readUInt32BE(0); 
+                    nextDataLength = header.readUInt32BE(4); 
+                    processing = true; 
+                }
+            } else {
+                if(buffer.length >= nextDataLength) {
+                    const content = bufferSlicer(nextDataLength); 
+                    ws.send(content); 
+                    nextDataType = null; 
+                    nextDataLength = null;
+                    processing = true; 
+                }
+
+                
             }
         }
     }
